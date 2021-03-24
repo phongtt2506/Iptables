@@ -10,6 +10,11 @@ Năm hooks như sau:
 - NF_IP_LOCAL_OUT: Hook này được kích hoạt bởi bất kỳ lưu lượng truy cập ngoài được tạo cục bộ nào ngay khi nó chạm vào ngăn xếp mạng.
 - NF_IP_POST_ROUTING: Hook này được kích hoạt bởi bất kỳ lưu lượng đi hoặc chuyển tiếp nào sau khi định tuyến đã diễn ra và ngay trước khi được đưa ra trên dây.
 
+## Iptables (command)
+![Image of Yaktocat](https://raw.githubusercontent.com/phongtt2506/Iptables/main/img/firewalld1.png)
+
+
+
 # 1. Các khái niệm
 
 Trước tiên, ta sẽ xem danh sách một số rules của iptables cơ bản trên 1 server (CentOS)
