@@ -11,9 +11,9 @@ Năm hooks như sau:
 - NF_IP_POST_ROUTING: Hook này được kích hoạt bởi bất kỳ lưu lượng đi hoặc chuyển tiếp nào sau khi định tuyến đã diễn ra và ngay trước khi được đưa ra trên dây.
 
 ## Iptables (command)
-![Image of Yaktocat](https://raw.githubusercontent.com/phongtt2506/Iptables/main/img/firewalld1.png)
+![Image of Yaktocat](https://raw.githubusercontent.com/phongtt2506/Iptables/main/img/firewalld.png)
 
-
+![Image of Yaktocat](https://raw.githubusercontent.com/phongtt2506/Iptables/main/img/hook-and-chain1.png)
 
 # 1. Các khái niệm
 
