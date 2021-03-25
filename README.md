@@ -109,7 +109,7 @@ Chain POSTROUTING | Rule này thực thi ngay khi gói tin rời giao diện m�
 
 **Chỉ định target -j**
 
-Chain | Rule
+Target | Description
 ------------ | -------------
 -j RETURN | will cause the current packet to stop traveling through the chain (or sub-chain).
 -j ACCEPT | the rule is accepted and will not continue traversing the current chain or any other ones in the same table. Note however, that a packet that was accepted in one chain might still travel through chains within other tables, and could still be dropped there
@@ -314,7 +314,6 @@ Lưu iptables:
 sudo service iptables save
 ```
 Xem thêm nhiều cách defined rules tại đây: https://linux.die.net/man/8/iptables
-
 
 # 6. Tổng kết
 Netfilter packet filtering framework và tường lửa iptables là cơ sở cho hầu hết các giải pháp tường lửa trên các máy chủ Linux. Các netfilter kernel hooks đủ gần với ngăn xếp mạng để cung cấp khả năng kiểm soát mạnh mẽ đối với các gói khi chúng được hệ thống xử lý. Tường lửa iptables tận dụng các khả năng này để cung cấp một phương thức linh hoạt, có thể mở rộng để truyền đạt các yêu cầu chính sách tới kernel. Bằng cách tìm hiểu về cách các phần này khớp với nhau, bạn có thể sử dụng chúng tốt hơn để kiểm soát và bảo vệ môi trường máy chủ của mình.
