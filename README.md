@@ -82,7 +82,7 @@ Chain OUTPUT | Rule trong chain này được thực thi ngay sau khi gói tin �
 Chain FORWARD | Rule này thực thi cho các gói tin được định tuyến qua host hiện tại. Chain này chỉ tồn tại ở table mangle và filter.
 Chain PREROUTING | Rule trong chain này được thực thi ngay khi gói tin vừa vào đến giao diện mạng(Network Interface). Chain này tồn tại ở các table: nat, mangle và raw.
 Chain POSTROUTING | Rule này thực thi ngay khi gói tin rời giao diện mạng. Chain này chỉ tồn tại ở table mangle và nat.
-|
+
 
 **- Target:** Là hành động sẽ được trigger ngay khi cách tiêu chí của rule match hoàn toàn. 
 * ACCEPT: chấp nhận và cho phép gói tin đi vào hệ thống.
@@ -122,7 +122,7 @@ Chain | Rule
 -j MARK | Only valid in mangle table. Note that the mark value is not set within the actual package, but is a value that is associated within the kernel with the packet. In other words does not make it out of the machine iptables -t mangle -A PREROUTING -p tcp --dport 22 -j MARK --set-mark 2.
 -j MASQUERADE | Similar to SNAT but used on a outbound network interface when the outbound IP can change. Say a DHCP interface Only valid within the POSTROUTING.
 -j REDIRECT | redirect packets and streams to the machine itself. Valid within the PREROUTING and OUTPUT chains of the nat table. It is also valid within user-defined chains that are only called from those chains.
-|
+
 - Thao tác với chain trong iptables.
 	* Tạo chain mới: IPtables -N
 	* Xóa hết các rule đã tạo trong chain: IPtables -X
