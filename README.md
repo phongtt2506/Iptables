@@ -2,7 +2,9 @@
 **Iptables** là một hệ thống tường lửa (Firewall) tiêu chuẩn được cấu hình, tích hợp mặc định trong hầu hết các bản phân phối của hệ điều hành Linux (CentOS, Ubuntu…). **Iptables** hoạt động dựa trên việc phân loại và thực thi các package ra/vào theo các quy tắc được thiết lập từ trước.
 
 iptables đơn giản chỉ là một danh sách các rules được tổ chức theo dạng bảng. Mỗi một rule chứa một loạt các classifiers (iptables matches) và một connected action (iptables target).
+Iptables là giao diện dòng lệnh, nó sẽ tương tác với tính năng packet filtering của netfilter framework.
 Có 5 hook netfilter nằm bên trong Linux Kernal, nó cho phép kernel modules thực hiện các tác vụ đối với network stack.
+
 Năm hooks như sau:
 - NF_IP_PRE_ROUTING: Hook này sẽ được kích hoạt bởi bất kỳ lưu lượng truy cập đến nào ngay sau khi vào ngăn xếp mạng. Hook này được xử lý trước khi bất kỳ quyết định định tuyến nào được đưa ra liên quan đến nơi gửi gói.
 - NF_IP_LOCAL_IN: Hook này được kích hoạt sau khi gói đến được định tuyến nếu gói được định sẵn cho hệ thống cục bộ.
@@ -10,16 +12,20 @@ Năm hooks như sau:
 - NF_IP_LOCAL_OUT: Hook này được kích hoạt bởi bất kỳ lưu lượng truy cập ngoài được tạo cục bộ nào ngay khi nó chạm vào ngăn xếp mạng.
 - NF_IP_POST_ROUTING: Hook này được kích hoạt bởi bất kỳ lưu lượng đi hoặc chuyển tiếp nào sau khi định tuyến đã diễn ra và ngay trước khi được đưa ra trên dây.
 
-Iptables chỉ là giao diện dòng lệnh để tương tác với tính năng packet filtering của netfilter framework.
-
-![Image of Yaktocat](https://raw.githubusercontent.com/phongtt2506/Iptables/main/img/firewalld.png)
-
 ![Image of Yaktocat](https://raw.githubusercontent.com/phongtt2506/Iptables/main/img/hook-and-chain.png)
 
 iptables sẽ tương tác với Netfilter thông qua 5 hooks và 5 hooks đó được kết nối vs 5 chains iptables.
 
 Cơ chế packet filtering của iptables hoạt động bao gồm 3 thành phần chính: tables, chains, target.
-# 1. Các khái niệm
+
+## Sự khác nhau giữa iptables và firewalld.
+![Image of Yaktocat](https://raw.githubusercontent.com/phongtt2506/Iptables/main/img/firewalld.png)
+
+Mô hình trên cho thấy cả iptables và firewalld đều sử dụng iptables command để giao tiếp với kernel packet filter.
+Tuy nhiên, trong khi iptables lưu cấu hình tại /etc/sysconfig/iptables và /etc/sysconfig/ip6tables, thì firewalld lại lưu cấu hình dưới dạng các file XML trong /usr/lib/firewalld. 
+Đối với iptables, mỗi một thay đổi đồng nghĩa với việc hủy bỏ toàn bộ các rules cũ và load lại một loạt các rules mới trong file /etc/sysconfig/iptables. Trong khi đó với firewalld, chỉ những thay đổi mới được applied.
+
+# 1. Các khái niệm thường gặp trong iptales.
 
 Trước tiên, ta sẽ xem danh sách một số rules của iptables cơ bản trên 1 server (CentOS)
 Run: *iptables -L -v*
@@ -54,13 +60,19 @@ Chain OUTPUT (policy ACCEPT 2197K packets, 629M bytes)
 
 Chúng ta có thể thấy các Chains: INPUT, FORWARD, OUTPUT. Mỗi chain gồm các cột: target, prot, opt, source, destination. Vậy ý nghĩa của chúng là gì?
 
-**- Table:** iptables sử dụng các bảng để chứa các rules của nó. Các bảng này phân loại các rule sẽ thực thi lên packet. Ví dụ, nếu một rule liên quan đến địa chỉ ip, nó sẽ được đưa vào bảng nat. Nếu rule được sử dụng để quyết định có cho phép gói tin tiếp tục đến đích hay không, nó có thể sẽ được thêm vào bảng filter.
-Trong iptables được chia thành 3 table:
+**- Tables:** iptables sử dụng các bảng để chứa các rules của nó. Các bảng này phân loại các rule sẽ thực thi lên packet. Ví dụ, nếu một rule liên quan đến địa chỉ ip, nó sẽ được đưa vào bảng nat. Nếu rule được sử dụng để quyết định có cho phép gói tin tiếp tục đến đích hay không, nó có thể sẽ được thêm vào bảng filter.
+Trong iptables được chia thành 3 table chính:
 * Table mangle: Bảng này để thay đổi QoS (Quality of Service) của gói tin như thay đổi các tham số TTL, TOS,.. Nó có các chains là : FORWARD, INPUT, OUTPUT, POSTROUTING, và PREROUTING.
 * Table NAT: dùng để thay đổi địa chỉ nguồn, địa chỉ đích, port nguồn, port đích của gói tin. Nó có 3 chains là: OUTPUT, POSTROUTING, và PREROUTING.
 * Table filter: dùng để áp dụng các policy lọc gói tin qua đó cho phép gói tin vào, qua và ra khỏi hệ thống. Nó bao gồm các chains: FORWARD, INPUT, và OUTPUT.
 
-**- Chain:** Mặc định mỗi table sẽ có các chain, mỗi chain sẽ có policy quyết định trạng thái của gói tin. Policy sẽ có 2 trạng thái là ACCEPT hoặc DROP, mặc định là ACCEPT.
+*Ngoài ra còn 2 bảng khác nhưng ít được sử dụng là bảng Raw và bàng Security.*
+
+Để xem danh sách các chains và rules trong 1 table ta sử dụng lệnh sau:
+```
+iptables -t <tên table> -L -v
+```
+**- Chains:** Mặc định mỗi table sẽ có các chain, mỗi chain sẽ có policy quyết định trạng thái của gói tin. Policy sẽ có 2 trạng thái là ACCEPT hoặc DROP, mặc định là ACCEPT.
 
 Iptables được định nghĩa trong 5 chain (gần như giống với 5 hooks đã trình bày ở trên) trong quá trình xử lí gói tin: PREROUTING, INPUT, FORWARD, POSTROUTING và OUTPUT. Khi tạo 1 rule thì sẽ được gán vào các Chain này.
 Chain | Rule
@@ -80,18 +92,10 @@ Chain POSTROUTING | Rule này thực thi ngay khi gói tin rời giao diện m�
 
 	*Packet sẽ được đi qua tất cả các rules đặt ra mà không dừng lại ở bất kì rule nào đúng. Trường hợp gói tin không khớp với rules nào mặc định sẽ được chấp nhận.*
 
-**- Rule:** Bao gồm 1 hoặc nhiều quy tắc để xác định packet nào sẽ chịu ảnh hưởng và target (hành động) được thực thi vào packet đó.
-- *Như vậy cấu trúc của 1 iptables như sau: Iptables > Table > Chains > Rules.*
+**- Rules:** Bao gồm 1 hoặc nhiều quy tắc để xác định packet nào sẽ chịu ảnh hưởng và target (hành động) được thực thi vào packet đó.
+- *Như vậy cấu trúc của 1 iptables như sau: Iptables > Tables > Chains > Rules.*
 
-**- prot:** Là viết tắt của chữ Protocol, nghĩa là giao thức. Tức là các giao thức sẽ được áp dụng để thực thi quy tắc này. Ở đây chúng ta có 3 lựa chọn là all, tcp hoặc udp. Các ứng dụng như SSH, FTP, sFTP,..đều sử dụng giao thức kiểu TCP.
-
-**- in:** chỉ ra rule sẽ áp dụng cho các gói tin đi vào từ interface nào, ví dụ lo, eth0, eth1 hoặc any là áp dụng cho tất cả interface.
-
-**- out:** tương tự  IN, chỉ ra rule sẽ áp dụng cho các gói tin đi ra từ interface nào.
-
-**- destination:** địa chỉ của lượt truy cập được phép áp dụng quy tắc. 
-
-# 2. Các tùy chọn
+# 2. Các tùy chọn.
 - Chỉ định thông số Iptables.
 	* Chỉ định tên table: -t ,
 	* Chỉ định loại giao thức: -p ,
@@ -116,10 +120,10 @@ Chain | Rule
 -j LOG | Note: Does not work on namespaces. Also can fill up your kernel log. iptables -A INPUT -p tcp -j LOG --log-prefix "INPUT packets"
 -j ULOG | packet information is multicasted together with the whole packet through a netlink socket. One or more user-space processes may then .
 -j MARK | Only valid in mangle table. Note that the mark value is not set within the actual package, but is a value that is associated within the kernel with the packet. In other words does not make it out of the machine iptables -t mangle -A PREROUTING -p tcp --dport 22 -j MARK --set-mark 2.
--j MASQUERADE | Similar to SNAT but used on a outbound network interface when the outbound IP can change. Say a DHCP interface Only valid within the POSTROUTING
+-j MASQUERADE | Similar to SNAT but used on a outbound network interface when the outbound IP can change. Say a DHCP interface Only valid within the POSTROUTING.
 -j REDIRECT | redirect packets and streams to the machine itself. Valid within the PREROUTING and OUTPUT chains of the nat table. It is also valid within user-defined chains that are only called from those chains.
 |
-- Thao tác với chain trong Iptables.
+- Thao tác với chain trong iptables.
 	* Tạo chain mới: IPtables -N
 	* Xóa hết các rule đã tạo trong chain: IPtables -X
 	* Đặt chính sách cho các chain `built-in` (INPUT, OUTPUT & FORWARD): IPtables -P , ví dụ: IPtables -P INPUT ACCEPT để chấp nhận các packet vào chain INPUT
@@ -127,13 +131,30 @@ Chain | Rule
 	* Xóa các rule có trong chain (flush chain): IPtables -F
 	* Reset bộ đếm packet về 0: IPtables -Z
 
-- Thao tác với rule trong Iptables.
+- Thao tác với rule trong iptables.
 	* Thêm rule: -A (append)
 	* Xóa rule: -D (delete)
 	* Thay thế rule: -R (replace)
 	* Chèn thêm rule: -I (insert)
 
-# 3. Cách hoạt động iptables
+**Available States – Các trạng thái của kết nối**
+
+Đây là những trạng thái mà hệ thống connection tracking theo dõi trạng thái của các kết nối tới server. Có các trạng thái như sau:
+- NEW: Khi có một gói tin mới được gởi tới và không nằm trong bất kỳ connection nào hiện có, hệ thống sẽ khởi tạo một kết nối mới và gắn nhãn NEW cho kết nối này. Nhãn này dùng cho cả TCP và UDP.
+- ESTABLISHED: Trạng thái chuyển NEW to ESTABLISHED khi nhận được phản hồi hợp lệ từ phía đối diện của kết nối. Với kết nối TCP, nó chính là SYN/ACK và với UDP/ICMP, là phản hồi mà ở đó địa chỉ nguồn và địa chỉ đích được hoán đổi.
+- RELATED: Gói tin được gởi tới không thuộc về một kết nối hiện có nhưng có liên quan đến một kết nối đang có trên hệ thống. Đây có thể là một kết nối phụ hỗ trợ cho kết nối chính, ví dụ như giao thức FTP có kết nối chính dùng để chuyển lệnh và kết nối phụ dùng để truyền dữ liệu.
+- INVALID: Gói tin được đánh dấu INVALID khi gói tin này không có bất cứ quan hệ gì với các kết nối đang có sẵn, không thích hợp để khởi tạo một kết nối mới hoặc đơn giản là không thể xác định được gói tin này, không tìm được kết quả trong bảng định tuyến.
+- UNTRACKED: Gói tin có thể được gắn hãn UNTRACKED nếu gói tin này đi qua bảng raw và được xác định ( gắn cờ ) là không cần theo dõi gói này trong bảng connection tracking.
+- SNAT: Đó là trạng thái sẽ được đánh dấu khi gói tin được chỉnh sửa phần source address bởi quá trình NAT. Nó được dùng bởi hệ thống Connection tracking để thay đổi lại source address ở gói tin phản hồi lại.
+- DNAT: Đó là trạng thái sẽ được đánh dấu khi gói tin được chỉnh sửa phần destination address bởi quá trình NAT. Nó được dùng bởi hệ thống Connection tracking để thay đổi lại destination address ở gói tin phản hồi lại.
+
+State sẽ được lưu trong /proc/net/nf_conntrack
+
+Đây là 1 state được lưu:
+```
+ipv4     2 icmp     1 29 src=192.168.100.100 dst=1192.168.100.200 type=8 code=0 id=2987 src=192.168.100.100 dst=192.168.100.200 type=0 code=0 id=2987 mark=0 secctx=system_u:object_r:unlabeled_t:s0 zone=0 use=2
+```
+# 3. Cách hoạt động iptables.
 Iptables hoạt động bằng cách so sánh packet với một danh sách các rules. Rule định nghĩa các tính chất mà packet cần có để match với rule kèm theo những hành động sẽ được thực thi với những matching packets.
 
 Có rất nhiều các options để thiết lập rule sao cho nó match với packets đi qua như protocol, ip, interface… Khi một packet match, target được thực thi. Target có thể là quyết định cuối cùng áp dụng đối với packet ví dụ như ACCEPT hoặc DROP. Nó cũng có thể chuyển packet tới chain khác để xử lí hoặc đơn giản log lại.
@@ -143,8 +164,6 @@ Các rules này được gộp lại thành nhóm gọi là chains. Chains là d
 Mỗi chain có thể có một hoặc nhiều rule nhưng mặc định nó sẽ có 1 policy. Trong trường hợp packets không match với bất cứ rules nào, policy sẽ được thực thi, bạn có thể accept hoặc drop nó.
 
 ![](https://raw.githubusercontent.com/phongtt2506/Iptables/main/img/tables.png)
-
-
 
 
 # 4. Các lệnh cơ bản trong Iptables.
@@ -239,7 +258,7 @@ Chain INPUT (policy ACCEPT 6 packets, 1206 bytes)
 ````
 *Output trên: Tất cả các host sẽ không ping được server.*
 
-- Thêm rule để 1 host có thể ping tới server bằng lệnh sau.
+- Thêm rule để host có ip 192.168.100.100 có thể ping tới server bằng lệnh sau.
 ````
 iptables -I INPUT 2 -s <host> -p icmp --icmp-type echo-request -j ACCEPT
 ````
@@ -252,7 +271,7 @@ Chain INPUT (policy ACCEPT 8 packets, 1608 bytes)
     5   420 ACCEPT     icmp --  any    any     10.11.200.185        anywhere             icmp echo-request
   740 62160 REJECT     icmp --  any    any     anywhere             anywhere             icmp echo-request reject-with icmp-port-unreachable
 ````
-Như vậy host 10.11.200.185 sẽ có thể ping tới server, các host còn lại thì không.
+Như vậy host 192.168.100.100 sẽ có thể ping tới server, các host còn lại thì không.
 ````
 PING 192.168.100.200 (192.168.100.200) 56(84) bytes of data.
 64 bytes from 192.168.100.200: icmp_seq=1 ttl=64 time=0.211 ms
@@ -294,3 +313,8 @@ Lưu iptables:
 ```
 sudo service iptables save
 ```
+Xem thêm nhiều cách defined rules tại đây: https://linux.die.net/man/8/iptables
+
+
+# 6. Tổng kết
+Netfilter packet filtering framework và tường lửa iptables là cơ sở cho hầu hết các giải pháp tường lửa trên các máy chủ Linux. Các netfilter kernel hooks đủ gần với ngăn xếp mạng để cung cấp khả năng kiểm soát mạnh mẽ đối với các gói khi chúng được hệ thống xử lý. Tường lửa iptables tận dụng các khả năng này để cung cấp một phương thức linh hoạt, có thể mở rộng để truyền đạt các yêu cầu chính sách tới kernel. Bằng cách tìm hiểu về cách các phần này khớp với nhau, bạn có thể sử dụng chúng tốt hơn để kiểm soát và bảo vệ môi trường máy chủ của mình.
